@@ -276,7 +276,7 @@ def main():
     
     # ========== 配置 ==========
     # 从环境变量读取API key，或直接设置
-    API_KEY = os.environ.get('HOPSWORKS_API_KEY', 'YOUR_API_KEY_HERE')
+    API_KEY = os.environ.get('HOPSWORKS_API_KEY', 'DySYOV5ksYlcstw4.NNQmxxhxC9OIq4PtZraWxsiRZhu00i7SlsBHaviCX2mrEtQILdEVCtUES2zeV8Gp')
     OUTPUT_DIR = './dashboard'
     HTML_FILE = os.path.join(OUTPUT_DIR, 'traffic_dashboard.html')
     
