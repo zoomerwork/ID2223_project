@@ -76,14 +76,19 @@ The generated HTML dashboard includes:
 - **Statistics Summary**: Average, peak, and holiday information
 - **Automatic Updates**: Timestamp showing last update time
 
-## 🛠️ Technical Details
+## 🔄 Update Schedule
+
+The dashboard updates automatically:
+- **Frequency**: Daily
+- **Time**: 8:00 AM UTC (via GitHub Actions)
+- **Data**: 7-day rolling forecast
 
 ### Data Sources
 
 1. **Historical Traffic Data**: Toronto Open Data Portal
 
-   - Daily visitor counts
-   - Vehicle counts
+   - Daily visitor(entering Canada) counts
+   - Vehicle(entering Canada) counts
    - Traffic flow statistics
 
 Data source:https://www150.statcan.gc.ca/n1/pub/71-607-x/71-607-x2022018-eng.htm
@@ -112,14 +117,7 @@ Data source:https://www150.statcan.gc.ca/n1/pub/71-607-x/71-607-x2022018-eng.htm
 
 
 
-## 📝 Development Workflow
 
-### Adding New Features
-
-1. Update feature engineering pipeline (Notebook 1)
-2. Retrain models with new features (Notebook 2)
-3. Update prediction pipeline (Notebook 3 or daily_update.py)
-4. Test predictions and dashboard generation
 
 
 
@@ -141,7 +139,18 @@ After running the ./notebooks/traffic_flow/traffic_flow_batch_inference.ipynb, y
 - [Open-Meteo API](https://open-meteo.com/)
 - [Toronto Open Data](https://open.toronto.ca/)
 
----
+Open the dashboard:
+```bash
+# On Windows
+start dashboard/traffic_dashboard.html
+
+# On macOS
+open dashboard/traffic_dashboard.html
+
+# On Linux
+xdg-open dashboard/traffic_dashboard.html
+```
+
 
 **Last Updated**: January 2026  
 **Project Status**: Active Development
