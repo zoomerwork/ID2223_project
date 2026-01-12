@@ -1,6 +1,6 @@
 """
 Traffic Flow Prediction Dashboard Generator
-每天自动更新预测并生成HTML报告
+Automatically updates predictions daily and generates HTML reports
 """
 
 import os
@@ -11,10 +11,10 @@ from io import BytesIO
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('Agg')  # 使用非交互式后端
+matplotlib.use('Agg')  # Use non-interactive backend
 
 def save_figure_to_base64(fig):
-    """将matplotlib图表转换为base64编码的字符串"""
+    """Convert matplotlib figure to base64 encoded string"""
     buffer = BytesIO()
     fig.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
     buffer.seek(0)
@@ -25,117 +25,117 @@ def save_figure_to_base64(fig):
 
 def create_prediction_charts(batch_data, output_dir='./dashboard'):
     """
-    创建三个预测图表并保存为base64
-    
-    返回:
-        dict: 包含三个图表的base64编码
+    Create three prediction charts and save as base64
+
+    Returns:
+        dict: Contains base64 encoded charts
     """
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Convert date for plotting
     plot_dates = pd.to_datetime(batch_data['date'])
-    
+
     # Define colors
     colors = {
         'visitors': '#2E86AB',
-        'vehicles': '#A23B72', 
+        'vehicles': '#A23B72',
         'traffic': '#F18F01'
     }
-    
+
     charts = {}
-    
+
     # ========== Chart 1: Predicted Visitors ==========
     fig1, ax1 = plt.subplots(figsize=(10, 6))
     visitors_data = batch_data['predicted_visitors']
-    
-    ax1.plot(plot_dates, visitors_data, 
-             marker='o', linewidth=2.5, markersize=8, 
+
+    ax1.plot(plot_dates, visitors_data,
+             marker='o', linewidth=2.5, markersize=8,
              color=colors['visitors'], label='Predicted Visitors')
-    ax1.set_title('Predicted Visitors - Next 7 Days', 
+    ax1.set_title('Predicted Visitors - Next 7 Days',
                   fontsize=16, fontweight='bold', pad=20)
     ax1.set_ylabel('Visitor Count', fontsize=12)
     ax1.set_xlabel('Date', fontsize=12)
     ax1.grid(True, alpha=0.3, linestyle='--')
-    
+
     # Fill area from min value
     y_min_visitors = visitors_data.min() * 0.95
-    ax1.fill_between(plot_dates, y_min_visitors, visitors_data, 
+    ax1.fill_between(plot_dates, y_min_visitors, visitors_data,
                      alpha=0.3, color=colors['visitors'])
     ax1.set_ylim(bottom=y_min_visitors)
-    
+
     ax1.legend(loc='upper right', framealpha=0.9)
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    
+
     charts['visitors'] = save_figure_to_base64(fig1)
-    
+
     # ========== Chart 2: Predicted Vehicles ==========
     fig2, ax2 = plt.subplots(figsize=(10, 6))
     vehicles_data = batch_data['predicted_vehicles']
-    
-    ax2.plot(plot_dates, vehicles_data, 
-             marker='s', linewidth=2.5, markersize=8, 
+
+    ax2.plot(plot_dates, vehicles_data,
+             marker='s', linewidth=2.5, markersize=8,
              color=colors['vehicles'], label='Predicted Vehicles')
-    ax2.set_title('Predicted Vehicles - Next 7 Days', 
+    ax2.set_title('Predicted Vehicles - Next 7 Days',
                   fontsize=16, fontweight='bold', pad=20)
     ax2.set_ylabel('Vehicle Count', fontsize=12)
     ax2.set_xlabel('Date', fontsize=12)
     ax2.grid(True, alpha=0.3, linestyle='--')
-    
+
     y_min_vehicles = vehicles_data.min() * 0.95
-    ax2.fill_between(plot_dates, y_min_vehicles, vehicles_data, 
+    ax2.fill_between(plot_dates, y_min_vehicles, vehicles_data,
                      alpha=0.3, color=colors['vehicles'])
     ax2.set_ylim(bottom=y_min_vehicles)
-    
+
     ax2.legend(loc='upper right', framealpha=0.9)
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    
+
     charts['vehicles'] = save_figure_to_base64(fig2)
-    
+
     # ========== Chart 3: Predicted Traffic Flow ==========
     fig3, ax3 = plt.subplots(figsize=(10, 6))
     traffic_data = batch_data['predicted_traffic_count']
-    
-    ax3.plot(plot_dates, traffic_data, 
-             marker='D', linewidth=2.5, markersize=8, 
+
+    ax3.plot(plot_dates, traffic_data,
+             marker='D', linewidth=2.5, markersize=8,
              color=colors['traffic'], label='Predicted Traffic')
-    ax3.set_title('Predicted Traffic Flow - Next 7 Days', 
+    ax3.set_title('Predicted Traffic Flow - Next 7 Days',
                   fontsize=16, fontweight='bold', pad=20)
     ax3.set_ylabel('Traffic Count', fontsize=12)
     ax3.set_xlabel('Date', fontsize=12)
     ax3.grid(True, alpha=0.3, linestyle='--')
-    
+
     y_min_traffic = traffic_data.min() * 0.95
-    ax3.fill_between(plot_dates, y_min_traffic, traffic_data, 
+    ax3.fill_between(plot_dates, y_min_traffic, traffic_data,
                      alpha=0.3, color=colors['traffic'])
     ax3.set_ylim(bottom=y_min_traffic)
-    
+
     ax3.legend(loc='upper right', framealpha=0.9)
     ax3.spines['top'].set_visible(False)
     ax3.spines['right'].set_visible(False)
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    
+
     charts['traffic'] = save_figure_to_base64(fig3)
-    
+
     return charts
 
 def generate_html_dashboard(batch_data, charts, output_file='traffic_dashboard.html'):
     """
-    生成完整的HTML仪表板
-    
-    参数:
-        batch_data: DataFrame 包含预测数据
-        charts: dict 包含base64编码的图表
-        output_file: str 输出HTML文件名
+    Generate complete HTML dashboard
+
+    Args:
+        batch_data: DataFrame containing prediction data
+        charts: dict containing base64 encoded charts
+        output_file: str output HTML filename
     """
-    
-    # 计算统计数据
+
+    # Calculate statistics
     stats = {
         'avg_visitors': batch_data['predicted_visitors'].mean(),
         'avg_vehicles': batch_data['predicted_vehicles'].mean(),
@@ -145,13 +145,13 @@ def generate_html_dashboard(batch_data, charts, output_file='traffic_dashboard.h
         'min_traffic_date': batch_data.loc[batch_data['predicted_traffic_count'].idxmin(), 'date'],
         'min_traffic_value': batch_data['predicted_traffic_count'].min(),
     }
-    
-    # 生成每日预测表格的HTML
+
+    # Generate HTML for daily prediction table
     table_rows = ""
     for idx, row in batch_data.iterrows():
         holiday_badge = '🎉 Holiday' if row.get('holidays', 0) == 1 else ''
         holiday_class = 'holiday-row' if row.get('holidays', 0) == 1 else ''
-        
+
         table_rows += f"""
         <tr class="{holiday_class}">
             <td>{row['date']}</td>
@@ -162,8 +162,8 @@ def generate_html_dashboard(batch_data, charts, output_file='traffic_dashboard.h
             <td>{row.get('temperature_2m_mean', 0):.1f}°C</td>
         </tr>
         """
-    
-    # HTML模板
+
+    # HTML template
     html_template = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -448,48 +448,48 @@ def generate_html_dashboard(batch_data, charts, output_file='traffic_dashboard.h
 </body>
 </html>
     """
-    
-    # 写入文件
+
+    # Write to file
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_template)
-    
+
     print(f"✅ HTML dashboard generated: {output_file}")
     return output_file
 
 # ============================================================================
-# 使用示例
+# Usage Example
 # ============================================================================
 
 if __name__ == "__main__":
-    # 这是一个示例，展示如何使用这些函数
-    
-    # 假设你已经有了 batch_data（从推理notebook获得）
-    # batch_data 应该包含以下列:
+    # This is an example showing how to use these functions
+
+    # Assume you already have batch_data (obtained from inference notebook)
+    # batch_data should contain the following columns:
     # - date
     # - predicted_visitors
     # - predicted_vehicles
     # - predicted_traffic_count
-    # - holidays (可选)
-    # - temperature_2m_mean (可选)
-    
-    print("示例：如何使用HTML生成器")
+    # - holidays (optional)
+    # - temperature_2m_mean (optional)
+
+    print("Example: How to use the HTML generator")
     print("="*60)
     print("""
-    # 在你的推理notebook最后添加:
+    # Add this at the end of your inference notebook:
     
     from generate_dashboard import create_prediction_charts, generate_html_dashboard
     
-    # 1. 创建图表
+    # 1. Create charts
     charts = create_prediction_charts(batch_data)
     
-    # 2. 生成HTML
+    # 2. Generate HTML
     html_file = generate_html_dashboard(
         batch_data, 
         charts, 
         output_file='traffic_dashboard.html'
     )
     
-    # 3. 打开HTML查看
+    # 3. Open HTML to view
     import webbrowser
     webbrowser.open(html_file)
     """)

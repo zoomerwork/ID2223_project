@@ -1,6 +1,6 @@
 """
 Daily Traffic Prediction Update Script
-每天自动运行预测并更新HTML仪表板
+Automatically runs predictions daily and updates the HTML dashboard
 """
 
 import sys
@@ -13,51 +13,51 @@ import hopsworks
 import holidays
 from pathlib import Path
 
-# 添加项目路径
+# Add project path
 root_dir = Path(__file__).parent
 sys.path.append(str(root_dir))
 
-# 导入仪表板生成器
+# Import dashboard generator
 from generate_dashboard import create_prediction_charts, generate_html_dashboard
 
 class TrafficPredictor:
-    """交通流量预测器 - 完整的两阶段预测"""
-    
+    """Traffic Flow Predictor - Complete two-stage prediction"""
+
     def __init__(self, api_key):
-        """初始化并连接Hopsworks"""
+        """Initialize and connect to Hopsworks"""
         print("="*60)
         print("Toronto Traffic Flow Prediction System")
         print("="*60)
-        
+
         self.api_key = api_key
         self.project = None
         self.fs = None
         self.mr = None
-        
-        # 模型对象
+
+        # Model objects
         self.model_visitors = None
         self.model_vehicles = None
         self.model_traffic = None
-        
-        # 连接Hopsworks
+
+        # Connect to Hopsworks
         self._connect_hopsworks()
-        
-        # 加载模型
+
+        # Load models
         self._load_models()
-    
+
     def _connect_hopsworks(self):
-        """连接到Hopsworks"""
+        """Connect to Hopsworks"""
         print("\n📡 Connecting to Hopsworks...")
         self.project = hopsworks.login(api_key_value=self.api_key)
         self.fs = self.project.get_feature_store()
         self.mr = self.project.get_model_registry()
         print("✓ Connected successfully")
-    
+
     def _load_models(self):
-        """从Model Registry加载三个模型"""
+        """Load three models from Model Registry"""
         print("\n📦 Loading models from Model Registry...")
-        
-        # 模型1: Visitors
+
+        # Model 1: Visitors
         model_visitors_meta = self.mr.get_model(
             name="traffic_flow_visitors_xgboost_model",
             version=4,
@@ -66,8 +66,8 @@ class TrafficPredictor:
         self.model_visitors = XGBRegressor()
         self.model_visitors.load_model(saved_dir + "/model.json")
         print("✓ Visitors model loaded")
-        
-        # 模型2: Vehicles
+
+        # Model 2: Vehicles
         model_vehicles_meta = self.mr.get_model(
             name="traffic_flow_vehicles_xgboost_model",
             version=4,
@@ -76,8 +76,8 @@ class TrafficPredictor:
         self.model_vehicles = XGBRegressor()
         self.model_vehicles.load_model(saved_dir + "/model.json")
         print("✓ Vehicles model loaded")
-        
-        # 模型3: Traffic Flow
+
+        # Model 3: Traffic Flow
         model_traffic_meta = self.mr.get_model(
             name="traffic_flow_xgboost_model",
             version=7,
@@ -86,44 +86,44 @@ class TrafficPredictor:
         self.model_traffic = XGBRegressor()
         self.model_traffic.load_model(saved_dir + "/model.json")
         print("✓ Traffic flow model loaded")
-    
+
     def get_weather_forecast(self, days=7):
-        """获取天气预报"""
+        """Get weather forecast"""
         print(f"\n🌤️  Fetching {days}-day weather forecast...")
-        
+
         try:
             from mlfs.airquality import util
-            
-            # Toronto坐标
+
+            # Toronto coordinates
             city = "Toronto"
             latitude = 43.6532
             longitude = -79.3832
-            
+
             hourly_df = util.get_hourly_weather_forecast(city, latitude, longitude)
-            
-            # 转换为每日数据
+
+            # Convert to daily data
             hourly_df = hourly_df.set_index('date')
             daily_weather = hourly_df.between_time('11:59', '12:01')
             daily_weather = daily_weather.reset_index()
-            
+
             print(f"✓ Retrieved weather data for {len(daily_weather)} days")
             return daily_weather
-            
+
         except Exception as e:
             print(f"❌ Error fetching weather: {e}")
             return None
 
     def add_holiday_info(self, df):
-        """添加节假日信息（包含周末）"""
+        """Add holiday information (including weekends)"""
         print("\n📅 Adding holiday information...")
 
-        # 保持Timestamp类型
+        # Keep Timestamp type
         df['date'] = pd.to_datetime(df['date'])
 
-        # 使用holidays库
+        # Use holidays library
         ca_holidays = holidays.Canada(prov='ON')
 
-        # 特殊日期
+        # Special dates
         special_dates = {
             datetime(2026, 11, 27).date(): 'Black Friday',
             datetime(2026, 12, 24).date(): 'Christmas Eve',
@@ -134,24 +134,24 @@ class TrafficPredictor:
         }
 
         def is_holiday(date_obj):
-            # 检查周末
+            # Check weekends
             if date_obj.dayofweek >= 5:
                 return 1
-            # 检查官方节假日
+            # Check official holidays
             if date_obj.date() in ca_holidays:
                 return 1
-            # 检查特殊日期
+            # Check special dates
             if date_obj.date() in special_dates:
                 return 1
             return 0
 
         def get_holiday_name(date_obj):
-            # 周末名称
+            # Weekend names
             if date_obj.dayofweek == 5:
                 return 'Saturday'
             elif date_obj.dayofweek == 6:
                 return 'Sunday'
-            # 官方节假日
+            # Official holidays
             if date_obj.date() in ca_holidays:
                 return ca_holidays.get(date_obj.date())
             if date_obj.date() in special_dates:
@@ -161,7 +161,7 @@ class TrafficPredictor:
         df['holidays'] = df['date'].apply(is_holiday)
         df['holiday_name'] = df['date'].apply(get_holiday_name)
 
-        # 统计节假日
+        # Count holidays
         num_holidays = df['holidays'].sum()
         weekends = df[df['holiday_name'].isin(['Saturday', 'Sunday'])].shape[0]
         official = num_holidays - weekends
@@ -177,14 +177,14 @@ class TrafficPredictor:
             print("✓ No holidays in forecast period")
 
         return df
-    
+
     def predict_stage1(self, weather_data):
-        """阶段1: 预测Visitors和Vehicles"""
+        """Stage 1: Predict Visitors and Vehicles"""
         print("\n" + "="*60)
         print("STAGE 1: Predicting Visitors and Vehicles")
         print("="*60)
-        
-        # 准备特征
+
+        # Prepare features
         stage1_features = [
             'holidays',
             'temperature_2m_mean',
@@ -192,35 +192,35 @@ class TrafficPredictor:
             'wind_speed_10m_max',
             'wind_direction_10m_dominant'
         ]
-        
+
         X_stage1 = weather_data[stage1_features]
-        
-        # 预测Visitors
+
+        # Predict Visitors
         print("\n👥 Predicting visitors...")
         predicted_visitors = self.model_visitors.predict(X_stage1)
         weather_data['predicted_visitors'] = predicted_visitors
         print(f"✓ Predicted: {predicted_visitors.mean():,.0f} avg visitors/day")
-        
-        # 预测Vehicles
+
+        # Predict Vehicles
         print("\n🚗 Predicting vehicles...")
         predicted_vehicles = self.model_vehicles.predict(X_stage1)
         weather_data['predicted_vehicles'] = predicted_vehicles
         print(f"✓ Predicted: {predicted_vehicles.mean():,.0f} avg vehicles/day")
-        
+
         return weather_data
-    
+
     def predict_stage2(self, data_with_stage1):
-        """阶段2: 预测Traffic Flow"""
+        """Stage 2: Predict Traffic Flow"""
         print("\n" + "="*60)
         print("STAGE 2: Predicting Traffic Flow")
         print("="*60)
-        
-        # 准备数据 - 重命名列以匹配训练时的特征名
+
+        # Prepare data - rename columns to match training feature names
         batch_data_stage2 = data_with_stage1.copy()
         batch_data_stage2['visitors'] = batch_data_stage2['predicted_visitors']
         batch_data_stage2['vehicles'] = batch_data_stage2['predicted_vehicles']
-        
-        # 准备特征
+
+        # Prepare features
         stage2_features = [
             'visitors',
             'holidays',
@@ -230,84 +230,84 @@ class TrafficPredictor:
             'wind_speed_10m_max',
             'wind_direction_10m_dominant'
         ]
-        
+
         X_stage2 = batch_data_stage2[stage2_features]
-        
-        # 预测Traffic Flow
+
+        # Predict Traffic Flow
         print("\n🚦 Predicting traffic flow...")
         predicted_traffic = self.model_traffic.predict(X_stage2)
         data_with_stage1['predicted_traffic_count'] = predicted_traffic
         print(f"✓ Predicted: {predicted_traffic.mean():,.0f} avg traffic/day")
-        
+
         return data_with_stage1
-    
+
     def run_full_prediction(self):
-        """运行完整的预测流程"""
+        """Run complete prediction pipeline"""
         print("\n" + "="*60)
         print("Starting Full Prediction Pipeline")
         print("="*60)
-        
-        # 1. 获取天气预报
+
+        # 1. Get weather forecast
         weather_data = self.get_weather_forecast()
         if weather_data is None:
             return None
-        
-        # 2. 添加节假日信息
+
+        # 2. Add holiday information
         weather_data = self.add_holiday_info(weather_data)
-        
-        # 3. 阶段1预测
+
+        # 3. Stage 1 prediction
         data_with_stage1 = self.predict_stage1(weather_data)
-        
-        # 4. 阶段2预测
+
+        # 4. Stage 2 prediction
         final_predictions = self.predict_stage2(data_with_stage1)
-        
+
         print("\n" + "="*60)
         print("Prediction Pipeline Complete!")
         print("="*60)
-        
+
         return final_predictions
 
 def main():
-    """主函数 - 每日运行"""
-    
+    """Main function - runs daily"""
+
     print("\n" + "="*70)
     print(f"Daily Update Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*70)
-    
-    # ========== 配置 ==========
-    # 从环境变量读取API key，或直接设置
-    API_KEY = os.environ.get('HOPSWORKS_API_KEY', 'DySYOV5ksYlcstw4.NNQmxxhxC9OIq4PtZraWxsiRZhu00i7SlsBHaviCX2mrEtQILdEVCtUES2zeV8Gp')
+
+    # ========== Configuration ==========
+    # Read API key from environment variable, or set directly
+    API_KEY = os.environ.get('HOPSWORKS_API_KEY', 'YOUR_API_KEY_HERE')
     OUTPUT_DIR = './dashboard'
     HTML_FILE = os.path.join(OUTPUT_DIR, 'traffic_dashboard.html')
-    
-    # 创建输出目录
+
+    # Create output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
+
     try:
-        # ========== 1. 运行预测 ==========
+        # ========== 1. Run prediction ==========
         predictor = TrafficPredictor(API_KEY)
         batch_data = predictor.run_full_prediction()
-        
+
         if batch_data is None:
             print("❌ Prediction failed!")
             return
-        
-        # ========== 2. 生成图表 ==========
+
+        # ========== 2. Generate charts ==========
         print("\n📊 Generating charts...")
         charts = create_prediction_charts(batch_data, output_dir=OUTPUT_DIR)
         print("✓ Charts generated")
-        
-        # ========== 3. 生成HTML ==========
+
+        # ========== 3. Generate HTML ==========
         print("\n📄 Generating HTML dashboard...")
         html_file = generate_html_dashboard(batch_data, charts, output_file=HTML_FILE)
         print(f"✓ HTML dashboard saved: {html_file}")
-        
-        # ========== 4. 保存预测数据 ==========
+
+        # ========== 4. Save prediction data ==========
         csv_file = os.path.join(OUTPUT_DIR, f'predictions_{datetime.now().strftime("%Y%m%d")}.csv')
         batch_data.to_csv(csv_file, index=False)
         print(f"✓ Predictions saved to CSV: {csv_file}")
-        
-        # ========== 5. 显示统计 ==========
+
+        # ========== 5. Display statistics ==========
         print("\n" + "="*70)
         print("Prediction Statistics")
         print("="*70)
@@ -316,10 +316,10 @@ def main():
         print(f"Average Traffic:   {batch_data['predicted_traffic_count'].mean():>10,.0f}")
         print(f"Peak Traffic Day:  {batch_data.loc[batch_data['predicted_traffic_count'].idxmax(), 'date']}")
         print("="*70)
-        
+
         print(f"\n✅ Daily update completed successfully!")
         print(f"📁 Dashboard location: {os.path.abspath(HTML_FILE)}")
-        
+
     except Exception as e:
         print(f"\n❌ Error during daily update: {e}")
         import traceback
