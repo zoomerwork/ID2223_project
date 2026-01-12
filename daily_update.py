@@ -59,8 +59,8 @@ class TrafficPredictor:
         
         # 模型1: Visitors
         model_visitors_meta = self.mr.get_model(
-            name="visitor_prediction_xgboost_model",
-            version=1,
+            name="traffic_flow_visitors_xgboost_model",
+            version=4,
         )
         saved_dir = model_visitors_meta.download()
         self.model_visitors = XGBRegressor()
@@ -69,8 +69,8 @@ class TrafficPredictor:
         
         # 模型2: Vehicles
         model_vehicles_meta = self.mr.get_model(
-            name="vehicle_prediction_xgboost_model",
-            version=1,
+            name="traffic_flow_vehicles_xgboost_model",
+            version=4,
         )
         saved_dir = model_vehicles_meta.download()
         self.model_vehicles = XGBRegressor()
@@ -80,7 +80,7 @@ class TrafficPredictor:
         # 模型3: Traffic Flow
         model_traffic_meta = self.mr.get_model(
             name="traffic_flow_xgboost_model",
-            version=1,
+            version=7,
         )
         saved_dir = model_traffic_meta.download()
         self.model_traffic = XGBRegressor()
