@@ -1,12 +1,16 @@
-# .github/workflows/daily-update.yml
-
 name: Daily Traffic Prediction Update
 
 on:
   schedule:
-    # Ã¿ÌìUTCÊ±¼ä00:00ÔËĞĞ (¶«²¿Ê±¼äÍíÉÏ8µã)
-    - cron: '0 0 * * *'
-  workflow_dispatch:  # ÔÊĞíÊÖ¶¯´¥·¢
+    - cron: '0 0 * * *'  # æ¯å¤©UTC 00:00è¿è¡Œ
+  workflow_dispatch:  # å…è®¸æ‰‹åŠ¨è§¦å‘
+  push:
+    branches: [ main ]  # æ¯æ¬¡æ¨é€åˆ°mainä¹Ÿè¿è¡Œ
+
+permissions:
+  contents: write  # å…è®¸å†™å…¥å†…å®¹
+  pages: write     # å…è®¸å†™å…¥Pages
+  id-token: write  # å…è®¸OIDCè®¤è¯
 
 jobs:
   update-dashboard:
@@ -14,15 +18,17 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
+        pip install --upgrade pip
         pip install -r requirements.txt
     
     - name: Run prediction
@@ -37,3 +43,6 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dashboard
         publish_branch: gh-pages
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
