@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# 环境变量
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Hopsworks下载的模型
+visitor_prediction_xgboost_model/
+vehicle_prediction_xgboost_model/
+traffic_flow_xgboost_model/
+
+# 日志
+logs/
+*.log
+
+# 临时文件
+*.tmp
+.DS_Store
